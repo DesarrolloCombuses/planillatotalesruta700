@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registro Planilla Zamora</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root{
+      --bg:#f8f9fa; --card:#fff; --text:#111827; --muted:#6b7280; --border:#e5e7eb; --accent:#2563eb;
+      --table-zebra:#f3f4f6;
+    }
+    body.dark{
+      --bg:#0f172a; --card:#0b1220; --text:#e5e7eb; --muted:#9ca3af; --border:#1f2937; --accent:#3b82f6;
+      --table-zebra:#111827;
+    }
+    body{ background:var(--bg); color:var(--text); }
+    .card{ background:var(--card); border-radius:1rem; border:1px solid var(--border); }
+    .required::after{ content:" *"; color:#dc2626; }
+    input[type="text"], select, input[type="number"]{ text-transform:uppercase; }
+    .stat{ background:var(--card); border:1px solid var(--border); border-radius:.75rem; padding:.75rem 1rem; }
+    .stat .k{ font-size:1.25rem; font-weight:700; }
+    .stat .t{ color:var(--muted); font-size:.9rem; }
+    .badge-soft{ background:#eef2ff; color:#3730a3; }
+    .table-sm td,.table-sm th{ padding:.45rem .5rem; }
+    .nav-pills .nav-link.active{ background:var(--accent); }
+    .table thead th{ cursor:pointer; user-select:none; white-space:nowrap; }
+    .table thead th .sort{ font-size:.8em; opacity:.7; margin-left:.25rem; }
+    .toolbar .form-control{ background:var(--card); color:var(--text); border:1px solid var(--border); }
+    .toolbar .btn-outline-secondary{ border-color:var(--border); color:var(--text); }
+    .spinner{ width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:inline-block; vertical-align:text-bottom; }
+    @keyframes spin{ to{ transform:rotate(360deg)} }
+    .table-striped>tbody>tr:nth-of-type(odd)>*{ background-color:var(--table-zebra); }
+
+    /* Toolbar responsive en móvil */
+    @media (max-width: 576px){
+      .toolbar { width:100%; gap:.5rem; }
+      .toolbar > * { width:100%; }
+      .toolbar .btn-group { width:100%; }
+      .toolbar .dropdown-menu { width:100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+
+  <!-- Header + Modo oscuro -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">📋 Registro Planilla Zamora</h3>
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="darkToggle">
+      <label class="form-check-label" for="darkToggle">Modo oscuro</label>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="card shadow p-4">
+    <form id="planillaForm" class="row g-3">
+      <!-- Fecha -->
+      <div class="col-md-3">
+        <label class="form-label required">Fecha</label>
+        <input type="date" name="fecha" id="fechaInput" class="form-control" required>
+      </div>
+      <!-- RUTA -->
+      <div class="col-md-2">
+        <label class="form-label required">RUTA</label>
+        <select name="RUTA" class="form-select" required>
+          <option value="">Seleccione...</option>
+          <option value="700">700</option>
+        </select>
+      </div>
+      <!-- PLACA (readonly) -->
+      <div class="col-md-3">
+        <label class="form-label required">PLACA</label>
+        <input type="text" name="PLACA" id="placaInput" class="form-control" readonly required>
+      </div>
+      <!-- SUB-RUTA -->
+      <div class="col-md-2">
+        <label class="form-label required">SUB-RUTA</label>
+        <select name="SUB-RUTA" class="form-select" required>
+          <option value="">Seleccione...</option>
+          <option>N2</option><option>S3</option><option>N3</option>
+        </select>
+      </div>
+      <!-- VEH -->
+      <div class="col-md-2">
+        <label class="form-label required">VEH</label>
+        <select name="VEH" id="vehSelect" class="form-select" required>
+          <option value="">Seleccione...</option>
+          <option value="703">703</option><option value="705">705</option><option value="707">707</option>
+          <option value="708">708</option><option value="709">709</option><option value="714">714</option>
+          <option value="715">715</option><option value="717">717</option><option value="719">719</option>
+          <option value="721">721</option><option value="723">723</option><option value="725">725</option>
+          <option value="728">728</option><option value="729">729</option><option value="730">730</option>
+          <option value="731">731</option><option value="733">733</option><option value="735">735</option>
+          <option value="742">742</option><option value="744">744</option><option value="746">746</option>
+          <option value="747">747</option><option value="748">748</option><option value="749">749</option>
+          <option value="752">752</option><option value="757">757</option><option value="758">758</option>
+          <option value="759">759</option><option value="761">761</option><option value="763">763</option>
+          <option value="764">764</option><option value="765">765</option><option value="766">766</option>
+          <option value="767">767</option><option value="768">768</option><option value="769">769</option>
+        </select>
+      </div>
+      <!-- VALIDADORES -->
+      <div class="col-md-3">
+        <label class="form-label required">VALIDADOR I.</label>
+        <input type="number" inputmode="numeric" name="VALIDADOR I." id="validadorI" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label required">VALIDADOR F.</label>
+        <input type="number" inputmode="numeric" name="VALIDADOR F." id="validadorF" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label required">VIAJES</label>
+        <input type="number" inputmode="numeric" name="VIAJES" class="form-control" required>
+      </div>
+      <!-- OPERADOR -->
+      <div class="col-md-4">
+        <label class="form-label required">OPERADOR</label>
+        <select name="OPERADOR" id="operadorSelect" class="form-select" required>
+          <option value="">CARGANDO OPERADORES...</option>
+        </select>
+      </div>
+      <!-- TURNO -->
+      <div class="col-md-3">
+        <label class="form-label required">Turno</label>
+        <select name="TURNO" id="turnoSelect" class="form-select" required>
+          <option value="">Seleccione...</option>
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+      <!-- GESTOR -->
+      <div class="col-md-5">
+        <label class="form-label required">Nombre del Gestor</label>
+        <input type="text" name="GESTOR" class="form-control" required>
+      </div>
+
+      <div class="col-12 d-flex align-items-center gap-3">
+        <button type="submit" class="btn btn-primary">Agregar Registro</button>
+        <span id="dupInfo" class="badge badge-soft d-none">Este VEH ya fue ingresado para la fecha</span>
+        <span id="syncInfo" class="text-muted d-none"><span class="spinner"></span> Sincronizando…</span>
+      </div>
+    </form>
+  </div>
+
+  <!-- STATS -->
+  <div class="row mt-4 g-3">
+    <div class="col-md-4">
+      <div class="stat">
+        <div class="k" id="statHechos">0</div>
+        <div class="t">Hechos para la fecha seleccionada</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat">
+        <div class="k" id="statTotalVeh">0</div>
+        <div class="t">Total de VEH en la lista</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat">
+        <div class="k" id="statFaltan">0</div>
+        <div class="t">Faltantes para esa fecha</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO: TABS + HERRAMIENTAS + TABLA -->
+  <div class="card shadow p-4 mt-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 gap-2">
+      <h5 class="mb-0">📡 Registros guardados (Google Sheets)</h5>
+      <div class="d-flex align-items-center gap-2 toolbar">
+        <input id="searchInput" type="text" class="form-control form-control-sm" placeholder="Buscar: PLACA / VEH / OPERADOR" style="min-width: 260px;">
+        <button class="btn btn-outline-secondary btn-sm" id="btnClear">Limpiar</button>
+        <button class="btn btn-outline-secondary btn-sm" id="btnRefresh">Actualizar</button>
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">Exportar CSV</button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" id="exportCsvPage">Página actual</a></li>
+            <li><a class="dropdown-item" href="#" id="exportCsvAll">Todo filtrado</a></li>
+          </ul>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">Exportar Excel</button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" id="exportXlsxPage">Página actual</a></li>
+            <li><a class="dropdown-item" href="#" id="exportXlsxAll">Todo filtrado</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-pills gap-2 mb-3" id="tabsRango">
+      <li class="nav-item"><button class="nav-link active" data-range="hoy">Hoy</button></li>
+      <li class="nav-item"><button class="nav-link" data-range="semana">Semana</button></li>
+      <li class="nav-item"><button class="nav-link" data-range="mes">Mes</button></li>
+      <li class="nav-item"><button class="nav-link" data-range="historico">Histórico</button></li>
+    </ul>
+
+    <!-- Tabla remota -->
+    <div class="table-responsive">
+      <table class="table table-sm table-striped" id="tablaRemota">
+        <thead id="theadRemoto"></thead>
+        <tbody id="tbodyRemoto"></tbody>
+      </table>
+    </div>
+
+    <!-- Paginación (solo histórico) -->
+    <div class="d-flex align-items-center justify-content-between mt-2" id="pager" style="display:none;">
+      <div class="small text-muted" id="pagerInfo"></div>
+      <div class="btn-group">
+        <button class="btn btn-outline-secondary btn-sm" id="prevPage">« Anterior</button>
+        <button class="btn btn-outline-secondary btn-sm" id="nextPage">Siguiente »</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- CONFIG ---
+  const WEBHOOK_URL   = "https://connect.pabbly.com/workflow/sendwebhookdata/IjU3NjYwNTY1MDYzNjA0MzU1MjY1NTUzNTUxM2Ei_pc";
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdt1W60Eql-AQbkvM0esg_kkWW8bWdTwweIcYLjaJyKF0hHWb93mi8L4a8nXyQ9VF9AQwfppoc5p7v/pub?gid=0&single=true&output=csv";
+  const OPERADORES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRHl_PxEkh8jkoBOS0m8aertcYTvrNwjGdqZFcXd9DX4eQXZ6ulKw7cwbrApekm3S2XSsrPF-3IvDw5/pub?gid=1355170187&single=true&output=csv";
+
+  const AUTO_REFRESH_MS = 15000;      // auto refresco
+  const POLL_CONFIRM_MS = 20000;      // confirmar aparezca en Sheet
+  const POLL_INTERVAL_MS = 2000;      // intervalo sondeo
+  const PAGE_SIZE_HIST = 100;         // tamaño de página en Histórico
+
+  let autoRefreshTimer = null;
+
+  // Vehículo -> Placa
+  const vehPlacaMap = {
+    "703":"EQS895","705":"KTN494","707":"KTN914","708":"KTN209","709":"WMR093",
+    "714":"WDX622","715":"KTN495","717":"EQR790","719":"TRN968","721":"EQS922",
+    "723":"FVY522","725":"EQS921","728":"KTN496","729":"NNL187","730":"FWL901",
+    "731":"EQS897","733":"WMR005","735":"KTN493","742":"FVY442","744":"WDY573",
+    "746":"KTN491","747":"WMQ966","748":"FWK018","749":"FWM088","752":"WMR096",
+    "757":"KTN059","758":"KTO211","759":"SWX672","761":"TZS770","763":"WMP862",
+    "764":"KTN583","765":"TSR679","766":"KTN640","767":"KTN960","768":"GDX320","769":"GDX322"
+  };
+  const VEH_LIST = Object.keys(vehPlacaMap);
+
+  // --- Helpers ---
+  const pad = n => String(n).padStart(2,'0');
+  function formatDMY(yyyy_mm_dd){
+    if(!yyyy_mm_dd) return "";
+    const [y,m,d] = yyyy_mm_dd.split("-");
+    return `${pad(d)}/${pad(m)}/${y}`;
+  }
+  function nowDMYHMS(){
+    const t = new Date();
+    return `${pad(t.getDate())}/${pad(t.getMonth()+1)}/${t.getFullYear()} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+  }
+  const normKey = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]/g,"").toLowerCase();
+
+  // ----------- CORS FALLBACK (para WhatsApp viewer / file://) -----------
+  async function fetchTextCORS(url) {
+    const bust = url + (url.includes('?') ? '&' : '?') + 'cachebust=' + Date.now();
+
+    // 1) Directo (ideal en hosting o navegador normal)
+    try {
+      const r = await fetch(bust, { cache: 'no-store', mode: 'cors' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.text();
+    } catch (e) { /* fallback */ }
+
+    // 2) Proxy AllOrigins
+    try {
+      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(bust), { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.text();
+    } catch (e) { /* fallback */ }
+
+    // 3) Proxy r.jina.ai
+    try {
+      const clean = bust.replace(/^https?:\/\//, '').replace(/^\/\//, '');
+      const r = await fetch('https://r.jina.ai/http://' + clean, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.text();
+    } catch (e) { /* fin */ }
+
+    throw new Error('No se pudo descargar el recurso: ' + url);
+  }
+  // ----------------------------------------------------------------------
+
+  // --- Estado remoto / UI ---
+  let remoto = [];
+  let headersRemotos = [];
+  let activeRange = "hoy";
+  let searchQuery = "";
+  let sortKey = null;     // nombre de columna real
+  let sortDir = 1;        // 1 asc, -1 desc
+  let currentPage = 1;    // paginación histórico
+  let syncing = false;
+
+  // --- Modo oscuro ---
+  const darkToggle = document.getElementById("darkToggle");
+  function applyTheme(){
+    const dark = localStorage.getItem("darkMode")==="1";
+    document.body.classList.toggle("dark", dark);
+    darkToggle.checked = dark;
+  }
+  darkToggle.addEventListener("change", () => {
+    localStorage.setItem("darkMode", darkToggle.checked ? "1" : "0");
+    applyTheme();
+  });
+  applyTheme();
+
+  // --- Cargar OPERADORES (robusto + CORS fallback) ---
+  async function cargarOperadores() {
+    const sel = document.getElementById("operadorSelect");
+    const norm = s => (s||"").replace(/^\uFEFF/,"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+    try {
+      const csvText = await fetchTextCORS(OPERADORES_CSV_URL);
+      const firstLine = (csvText.split(/\r?\n/)[0] || "");
+      const sep = (firstLine.split(";").length > firstLine.split(",").length) ? ";" : ",";
+      const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+      if (!lines.length) throw new Error("CSV vacío");
+      const headersRaw = lines[0].split(sep);
+      const headers = headersRaw.map(h => norm(h));
+      const idxNombre = headers.findIndex(h => h.includes("nombre"));
+      if (idxNombre === -1) { sel.innerHTML = '<option value="">NO SE ENCONTRÓ COLUMNA NOMBRE</option>'; return; }
+      const valores = [];
+      for (let i=1;i<lines.length;i++){
+        const cols = lines[i].split(sep);
+        const val = (cols[idxNombre] ?? "").trim();
+        if (val) valores.push(val.toUpperCase());
+      }
+      const unicos = [...new Set(valores)];
+      sel.innerHTML = '<option value="">SELECCIONE...</option>';
+      unicos.forEach(v => { const opt=document.createElement("option"); opt.value=v; opt.textContent=v; sel.appendChild(opt); });
+      if (!unicos.length) sel.innerHTML = '<option value="">SIN FILAS EN LA HOJA</option>';
+    } catch (err) {
+      console.error("Error cargando operadores:", err);
+      sel.innerHTML = '<option value="">ERROR CARGANDO OPERADORES</option>';
+    }
+  }
+
+  // --- Descargar CSV remoto (sin caché + CORS fallback) ---
+  async function cargarRemoto() {
+    try {
+      const text = await fetchTextCORS(SHEET_CSV_URL);
+      const parsed = Papa.parse(text, {header:true, skipEmptyLines:true});
+      headersRemotos = parsed.meta.fields || Object.keys(parsed.data[0]||{});
+      remoto = parsed.data.map(row => {
+        const o = {};
+        headersRemotos.forEach(h => { o[h] = (row[h] ?? ""); });
+        return o;
+      });
+    } catch (e) {
+      console.error("Error cargando remoto:", e);
+      // Reintentará el auto-refresh
+    }
+  }
+
+  // FECHA -> Date (columna FECHA = DD/MM/AAAA)
+  function fechaToDate(val){
+    const f = (val||"").toString().trim();
+    const [d,m,y] = f.split("/");
+    if (!d||!m||!y) return null;
+    return new Date(`${y}-${m}-${d}T00:00:00`);
+  }
+  // localizar columnas típicas
+  function colFecha(){ return headersRemotos.find(h => normKey(h)==="fecha"); }
+  function colVeh(){ return headersRemotos.find(h => normKey(h)==="veh"); }
+  function colPlaca(){ return headersRemotos.find(h => normKey(h)==="placa"); }
+  function colOperador(){ return headersRemotos.find(h => normKey(h)==="operador"); }
+
+  // --- Filtrado por pestaña ---
+  function filtrarPorRango() {
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    let desde = new Date(hoy);
+    if (activeRange === "semana") desde.setDate(hoy.getDate() - 7);
+    if (activeRange === "mes")    desde.setDate(hoy.getDate() - 30);
+    const hFecha = colFecha();
+    if (!hFecha) return remoto.slice();
+    if (activeRange === "historico") return remoto.slice();
+    return remoto.filter(r => {
+      const d = fechaToDate(r[hFecha]);
+      if (!d) return false;
+      if (activeRange === "hoy") return d.getTime() === hoy.getTime();
+      return d >= desde;
+    });
+  }
+
+  // --- Buscador (PLACA/VEH/OPERADOR o todo) ---
+  function filtrarPorBusqueda(rows){
+    const q = searchQuery.trim().toUpperCase();
+    if (!q) return rows;
+    const hPlaca = colPlaca(), hVeh = colVeh(), hOp = colOperador();
+    return rows.filter(r=>{
+      if (hPlaca && (r[hPlaca]||"").toString().toUpperCase().includes(q)) return true;
+      if (hVeh   && (r[hVeh]  ||"").toString().toUpperCase().includes(q)) return true;
+      if (hOp    && (r[hOp]   ||"").toString().toUpperCase().includes(q)) return true;
+      // fallback: buscar en todas las celdas
+      return Object.values(r).some(v => (v||"").toString().toUpperCase().includes(q));
+    });
+  }
+
+  // --- Ordenamiento ---
+  function ordenarRows(rows){
+    if (!sortKey) return rows;
+    const dir = sortDir;
+    return rows.slice().sort((a,b)=>{
+      const av = (a[sortKey] ?? "").toString();
+      const bv = (b[sortKey] ?? "").toString();
+      const an = parseFloat(av.replace(',', '.'));
+      const bn = parseFloat(bv.replace(',', '.'));
+      const bothNum = !isNaN(an) && !isNaN(bn);
+      if (bothNum) return (an - bn) * dir;
+      return av.localeCompare(bv, 'es', { sensitivity:'base', numeric:true }) * dir;
+    });
+  }
+
+  // --- Paginación (solo histórico) ---
+  function paginateRows(rows){
+    if (activeRange !== "historico") {
+      document.getElementById("pager").style.display = "none";
+      return rows;
+    }
+    const total = rows.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE_HIST));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * PAGE_SIZE_HIST;
+    const end = start + PAGE_SIZE_HIST;
+    document.getElementById("pager").style.display = "flex";
+    document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages} · ${total} filas`;
+    document.getElementById("prevPage").disabled = currentPage === 1;
+    document.getElementById("nextPage").disabled = currentPage === totalPages;
+    return rows.slice(start, end);
+  }
+
+  // --- Render tabla (todas las columnas) ---
+  function renderRemoto() {
+    const thead = document.getElementById("theadRemoto");
+    const tbody = document.getElementById("tbodyRemoto");
+    thead.innerHTML = ""; tbody.innerHTML = "";
+
+    if(!headersRemotos.length){
+      thead.innerHTML = "<tr><th>Sin datos</th></tr>";
+      return;
+    }
+
+    // Cabecera (click = ordenar)
+    const trh = document.createElement("tr");
+    headersRemotos.forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      th.title = "Ordenar";
+      const span = document.createElement("span");
+      span.className = "sort";
+      if (sortKey === h) span.textContent = sortDir === 1 ? "▲" : "▼";
+      th.appendChild(span);
+      th.addEventListener("click", ()=>{
+        if (sortKey === h) sortDir = -sortDir; else { sortKey = h; sortDir = 1; }
+        currentPage = 1;
+        renderRemoto();
+      });
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+
+    // Pipeline: rango -> búsqueda -> orden -> paginación
+    const rowsRango = filtrarPorRango();
+    const rowsBusca = filtrarPorBusqueda(rowsRango);
+    const rowsOrden = ordenarRows(rowsBusca);
+    const rowsPage  = paginateRows(rowsOrden);
+
+    // Filas
+    const frag = document.createDocumentFragment();
+    rowsPage.forEach(r => {
+      const tr = document.createElement("tr");
+      headersRemotos.forEach(h => {
+        const td = document.createElement("td");
+        td.textContent = (r[h] ?? "");
+        tr.appendChild(td);
+      });
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+  }
+
+  // --- Stats (hechos/faltan) por fecha seleccionada ---
+  function actualizarStatsFechaActual() {
+    const fechaSel = formatDMY(document.getElementById("fechaInput").value);
+    const hFecha = colFecha();
+    const hechos = remoto.filter(r => (r[hFecha]||"").trim() === fechaSel).length;
+    const total = VEH_LIST.length;
+    const faltan = Math.max(0, total - hechos);
+    document.getElementById("statHechos").textContent = hechos;
+    document.getElementById("statTotalVeh").textContent = total;
+    document.getElementById("statFaltan").textContent = faltan;
+  }
+
+  // --- Duplicado FECHA+VEH ---
+  function existeRegistro(fechaDDMMYYYY, veh) {
+    const hFecha = colFecha(), hVeh = colVeh();
+    if (!hFecha || !hVeh) return false;
+    return remoto.some(r => (r[hFecha]||"")===fechaDDMMYYYY && (r[hVeh]||"")===veh);
+  }
+  function checkDuplicadoUI() {
+    const f = formatDMY(document.getElementById("fechaInput").value);
+    const v = document.getElementById("vehSelect").value;
+    const ya = existeRegistro(f, v);
+    const dup = document.getElementById("dupInfo");
+    if (f && v && ya) dup.classList.remove("d-none"); else dup.classList.add("d-none");
+    return ya;
+  }
+
+  // --- Inserción optimista ---
+  function mapFormToSheet(formDataObj){
+    const mapped = {};
+    const formEntries = Object.entries(formDataObj);
+    headersRemotos.forEach(h => {
+      const nh = normKey(h);
+      const par = formEntries.find(([k]) => normKey(k) === nh);
+      if (par) mapped[h] = par[1];
+      else {
+        const alias = {
+          "subruta": ["sub-ruta","sub_ruta","sub ruta"],
+          "validadori": ["validador i.","validador_i","validador i"],
+          "validadorf": ["validador f.","validador_f","validador f"],
+          "fechahoraaccion": ["fecha_hora_accion","fecha hora accion"]
+        };
+        let filled = false;
+        for (const [canon, list] of Object.entries(alias)) {
+          if (nh === canon) {
+            const found = formEntries.find(([k]) => list.map(normKey).includes(normKey(k)));
+            if (found) { mapped[h] = found[1]; filled = true; break; }
+          }
+        }
+        if (!filled) mapped[h] = "";
+      }
+    });
+    return mapped;
+  }
+  function optimisticInsert(formDataObj){
+    if (!headersRemotos.length) return;
+    const row = mapFormToSheet(formDataObj);
+    remoto.unshift(row); // al inicio
+    renderRemoto();
+    actualizarStatsFechaActual();
+    checkDuplicadoUI();
+  }
+
+  // --- Sondeo de confirmación ---
+  async function waitForSheetEcho(formDataObj, timeoutMs=POLL_CONFIRM_MS, intervalMs=POLL_INTERVAL_MS){
+    const fecha = formDataObj.fecha, veh = formDataObj.VEH;
+    const start = Date.now();
+    const sync = document.getElementById("syncInfo");
+    syncing = true; sync.classList.remove("d-none");
+    while (Date.now() - start < timeoutMs) {
+      await new Promise(r => setTimeout(r, intervalMs));
+      await cargarRemoto(); renderRemoto(); actualizarStatsFechaActual();
+      if (existeRegistro(fecha, veh)) { syncing = false; sync.classList.add("d-none"); return true; }
+    }
+    syncing = false; sync.classList.add("d-none");
+    return false;
+  }
+
+  // --- Auto refresh ---
+  function startAutoRefresh(){
+    stopAutoRefresh();
+    autoRefreshTimer = setInterval(async () => {
+      if (document.hidden || syncing) return;
+      await cargarRemoto();
+      renderRemoto();
+      actualizarStatsFechaActual();
+    }, AUTO_REFRESH_MS);
+  }
+  function stopAutoRefresh(){
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) startAutoRefresh(); });
+
+  // --- Tabs / búsqueda / paginación eventos ---
+  function setupTabs(){
+    document.querySelectorAll('#tabsRango .nav-link').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        document.querySelectorAll('#tabsRango .nav-link').forEach(b=>b.classList.remove('active'));
+        e.target.classList.add('active');
+        activeRange = e.target.dataset.range;
+        currentPage = 1;
+        renderRemoto();
+      });
+    });
+  }
+  document.getElementById("searchInput").addEventListener("input", (e)=>{
+    searchQuery = e.target.value;
+    currentPage = 1;
+    renderRemoto();
+  });
+  document.getElementById("btnClear").addEventListener("click", ()=>{
+    document.getElementById("searchInput").value = "";
+    searchQuery = "";
+    currentPage = 1;
+    renderRemoto();
+  });
+  document.getElementById("prevPage").addEventListener("click", ()=>{
+    if (currentPage>1){ currentPage--; renderRemoto(); }
+  });
+  document.getElementById("nextPage").addEventListener("click", ()=>{
+    currentPage++; renderRemoto();
+  });
+
+  // --- Exportar CSV/Excel ---
+  function rowsFiltradosCompleto(){
+    const r1 = filtrarPorRango();
+    const r2 = filtrarPorBusqueda(r1);
+    const r3 = ordenarRows(r2);
+    return r3;
+  }
+  function rowsPaginaActual(){
+    if (activeRange!=="historico") return rowsFiltradosCompleto();
+    const full = rowsFiltradosCompleto();
+    const start = (currentPage - 1) * PAGE_SIZE_HIST;
+    const end = start + PAGE_SIZE_HIST;
+    return full.slice(start, end);
+  }
+  function exportToCSV(rows, filename){
+    const csv = Papa.unparse(rows, { columns: headersRemotos });
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function exportToXLSX(rows, filename){
+    const ws = XLSX.utils.json_to_sheet(rows, { header: headersRemotos });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Datos");
+    XLSX.writeFile(wb, filename);
+  }
+  document.getElementById("exportCsvPage").addEventListener("click", (e)=>{ e.preventDefault(); exportToCSV(rowsPaginaActual(), "vista_pagina.csv"); });
+  document.getElementById("exportCsvAll").addEventListener("click", (e)=>{ e.preventDefault(); exportToCSV(rowsFiltradosCompleto(), "vista_filtrada.csv"); });
+  document.getElementById("exportXlsxPage").addEventListener("click", (e)=>{ e.preventDefault(); exportToXLSX(rowsPaginaActual(), "vista_pagina.xlsx"); });
+  document.getElementById("exportXlsxAll").addEventListener("click", (e)=>{ e.preventDefault(); exportToXLSX(rowsFiltradosCompleto(), "vista_filtrada.xlsx"); });
+
+  // --- Veh -> Placa ---
+  document.getElementById("vehSelect").addEventListener("change", function() {
+    const veh = this.value;
+    document.getElementById("placaInput").value = vehPlacaMap[veh] || "";
+    checkDuplicadoUI();
+  });
+  document.getElementById("fechaInput").addEventListener("change", ()=>{
+    actualizarStatsFechaActual();
+    checkDuplicadoUI();
+  });
+
+  // --- Submit ---
+  document.getElementById("planillaForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    if (!form.reportValidity()) return;
+
+    const valI = parseInt(document.getElementById("validadorI").value, 10);
+    const valF = parseInt(document.getElementById("validadorF").value, 10);
+    if (valF < valI) { alert("❌ El VALIDADOR F. no puede ser menor que VALIDADOR I."); return; }
+
+    if (checkDuplicadoUI()) { alert("⚠️ Ya existe un registro para ese VEH en la fecha seleccionada."); return; }
+
+    let data = Object.fromEntries(new FormData(form).entries());
+    data.fecha = formatDMY(data.fecha);
+    data.FECHA_HORA_ACCION = nowDMYHMS();
+    for (let k in data) {
+      if (typeof data[k] === "string" && k !== "fecha" && k !== "FECHA_HORA_ACCION") {
+        if (isNaN(data[k])) data[k] = data[k].toUpperCase();
+      }
+    }
+
+    try {
+      await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(data)
+      });
+      optimisticInsert(data);
+      waitForSheetEcho(data).then(ok=>{
+        if (!ok) console.warn("No se confirmó en el tiempo esperado (cache Google). Se verá en auto-refresh.");
+      });
+      alert("✅ Registro enviado correctamente");
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error enviando al Webhook");
+    }
+
+    form.reset();
+    document.getElementById("placaInput").value = "";
+  });
+
+  // --- Botón refrescar manual ---
+  document.getElementById("btnRefresh").addEventListener("click", async ()=>{
+    await cargarRemoto(); renderRemoto(); actualizarStatsFechaActual();
+  });
+
+  // --- Init ---
+  (async function init(){
+    document.getElementById("statTotalVeh").textContent = VEH_LIST.length;
+    setupTabs();
+    await cargarOperadores();
+    await cargarRemoto();
+    actualizarStatsFechaActual();
+    renderRemoto();
+    startAutoRefresh();
+  })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
