@@ -1,484 +1,239 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Registro Planilla de Viajes RUTA 700</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <meta charset="utf-8" />
+  <title>Planilla RUTA 700 – Embebida</title>
+
+  <!-- Viewport móvil moderno (incluye unidades dinámicas para iOS/Android) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+
+  <!-- Colores del tema (opcional) -->
+  <meta name="theme-color" content="#0f172a">
+
   <style>
-    :root{ --bg:#f8f9fa; --card:#fff; --text:#111827; --muted:#6b7280; --border:#e5e7eb; --accent:#2563eb; --table-zebra:#f3f4f6; }
-    body.dark{ --bg:#0f172a; --card:#0b1220; --text:#e5e7eb; --muted:#9ca3af; --border:#1f2937; --accent:#3b82f6; --table-zebra:#111827; }
-    body{ background:var(--bg); color:var(--text); }
-    .card{ background:var(--card); border-radius:1rem; border:1px solid var(--border); }
-    .required::after{ content:" *"; color:#dc2626; }
-    input[type="text"], select, input[type="number"]{ text-transform:uppercase; }
-    .stat{ background:var(--card); border:1px solid var(--border); border-radius:.75rem; padding:.75rem 1rem; }
-    .stat .k{ font-size:1.25rem; font-weight:700; }
-    .stat .t{ color:var(--muted); font-size:.9rem; }
-    .badge-soft{ background:#eef2ff; color:#3730a3; }
-    .table-sm td,.table-sm th{ padding:.45rem .5rem; }
-    .nav-pills .nav-link.active{ background:var(--accent); }
-    .table thead th{ cursor:pointer; user-select:none; white-space:nowrap; }
-    .table thead th .sort{ font-size:.8em; opacity:.7; margin-left:.25rem; }
-    .toolbar .form-control{ background:var(--card); color:var(--text); border:1px solid var(--border); }
-    .spinner{ width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:inline-block; vertical-align:text-bottom; }
-    @keyframes spin{ to{ transform:rotate(360deg)} }
-    .table-striped>tbody>tr:nth-of-type(odd)>*{ background-color:var(--table-zebra); }
-    @media (max-width: 576px){ .toolbar{ width:100%; gap:.5rem } .toolbar>*{ width:100% } .toolbar .btn-group,.toolbar .dropdown-menu{ width:100% } }
+    /* Reset y layout de pantalla completa */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #0b1220; /* fondo del borde */
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100svh; /* móviles modernos */
+      min-height: 100dvh; /* fallback moderno */
+      min-height: 100vh;  /* fallback general */
+      color: #0f172a;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    /* Barra superior */
+    .appbar {
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      gap: 8px;
+      /* “safe area” para iPhone con notch */
+      padding-left: calc(env(safe-area-inset-left, 0px) + 12px);
+      padding-right: calc(env(safe-area-inset-right, 0px) + 12px);
+      box-shadow: 0 2px 10px rgba(0,0,0,.25);
+      z-index: 5;
+    }
+    .appbar h1 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: .2px;
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid #334155;
+      background: #111827;
+      color: #e5e7eb;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .btn:hover { background:#0b1220; }
+    .btn.secondary {
+      background: transparent;
+      border-color: #475569;
+      color: #cbd5e1;
+    }
+
+    /* Contenedor principal que aloja el iframe */
+    .main {
+      position: relative;
+      flex: 1;
+      min-height: 0; /* importante para que el iframe pueda usar 100% */
+      background: #0b1220;
+      overflow: hidden;
+    }
+    .frame-wrap {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: 1fr;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff; /* fondo de la app */
+      /* Permite scroll suave dentro del iframe en móviles */
+      -webkit-overflow-scrolling: touch;
+      overflow: auto;
+    }
+
+    /* Loader superpuesto mientras carga el iframe */
+    .loader {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(100% 100% at 0% 0%, rgba(4, 6, 17, 0.75) 0%, rgba(4,6,17,0.9) 70%),
+        #040611;
+      color: #e5e7eb;
+      z-index: 2;
+      transition: opacity .25s ease;
+    }
+    .loader.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      border: 4px solid #1f2937;
+      border-top-color: #3b82f6;
+      animation: spin .8s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loadcard {
+      display: flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #1f2937;
+      padding: 12px 14px;
+      border-radius: 14px;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    .loadtext { font-size: 14px; color: #cbd5e1; }
+
+    /* Mensaje de error / ayuda */
+    .help {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 12px;
+      font-size: 12px;
+      color: #cbd5e1;
+      text-align: center;
+      opacity: .9;
+    }
+    .help a { color: #93c5fd; text-decoration: underline; }
+
+    /* Ajustes pequeños para pantallas muy estrechas */
+    @media (max-width: 380px) {
+      .appbar h1 { font-size: 14px; }
+      .btn { padding: 6px 8px; font-size: 11px; }
+      .loadtext { font-size: 13px; }
+    }
   </style>
 </head>
 <body>
-<div class="container py-4">
-
-  <!-- Header + Modo oscuro -->
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h3 class="mb-0">📋 Registro Planilla Viajes Totales RUTA 700</h3>
-    <div class="form-check form-switch">
-      <input class="form-check-input" type="checkbox" id="darkToggle">
-      <label class="form-check-label" for="darkToggle">Modo oscuro</label>
+  <!-- AppBar -->
+  <header class="appbar">
+    <h1>📋 Planilla RUTA 700</h1>
+    <div class="actions">
+      <button class="btn" id="btnReload" title="Recargar">Recargar</button>
+      
     </div>
-  </div>
+  </header>
 
-  <!-- FORM -->
-  <div class="card shadow p-4">
-    <form id="planillaForm" class="row g-3" autocomplete="off">
-      <div class="col-md-3">
-        <label class="form-label required">Fecha</label>
-        <input type="date" name="fecha" id="fechaInput" class="form-control" required>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label required">RUTA</label>
-        <select name="RUTA" class="form-select" required>
-          <option value="">Seleccione...</option>
-          <option value="700">700</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label required">PLACA</label>
-        <input type="text" name="PLACA" id="placaInput" class="form-control" readonly required>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label required">SUB-RUTA</label>
-        <select name="SUB-RUTA" class="form-select" required>
-          <option value="">Seleccione...</option>
-          <option>N2</option><option>S3</option><option>R4</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label required">VEH</label>
-        <select name="VEH" id="vehSelect" class="form-select" required></select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label required">VALIDADOR I.</label>
-        <input type="number" inputmode="numeric" name="VALIDADOR I." id="validadorI" class="form-control" required>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label required">VALIDADOR F.</label>
-        <input type="number" inputmode="numeric" name="VALIDADOR F." id="validadorF" class="form-control" required>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label required">VIAJES</label>
-        <input type="number" inputmode="numeric" name="VIAJES" class="form-control" required>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label required">OPERADOR</label>
-        <select name="OPERADOR" id="operadorSelect" class="form-select" required>
-          <option value="">CARGANDO OPERADORES...</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label required">Turno</label>
-        <select name="TURNO" id="turnoSelect" class="form-select" required>
-          <option value="">Seleccione...</option>
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
-        </select>
-      </div>
-      <div class="col-md-5">
-        <label class="form-label required">Nombre del Gestor</label>
-        <input type="text" name="GESTOR" class="form-control" required>
-      </div>
+  <!-- Contenido principal con iframe y loader -->
+  <main class="main">
+    <div class="frame-wrap">
+      <iframe
+        id="appFrame"
+        title="Planilla RUTA 700"
+        src="https://script.google.com/macros/s/AKfycbx3oSXd0e0hjMo41MTXNF6zunjJX_z7_vfbw3eQqrDVev8xlgjgFqtVWCx8WzHRtccqGw/exec"
+        loading="eager"
+        referrerpolicy="no-referrer-when-downgrade"
+        allow="clipboard-read; clipboard-write"
+        sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+      ></iframe>
 
-      <div class="col-12 d-flex align-items-center gap-3">
-        <button type="submit" class="btn btn-primary">Agregar Registro</button>
-        <span id="dupInfo" class="badge badge-soft d-none">Este VEH ya fue ingresado para la fecha</span>
-      </div>
-    </form>
-  </div>
-
-  <!-- STATS -->
-  <div class="row mt-4 g-3">
-    <div class="col-md-4"><div class="stat"><div class="k" id="statHechos">0</div><div class="t">Hechos para la fecha seleccionada</div></div></div>
-    <div class="col-md-4"><div class="stat"><div class="k" id="statTotalVeh">0</div><div class="t">Total de VEH en la lista</div></div></div>
-    <div class="col-md-4"><div class="stat"><div class="k" id="statFaltan">0</div><div class="t">Faltantes para esa fecha</div></div></div>
-  </div>
-
-  <!-- HISTÓRICO -->
-  <div class="card shadow p-4 mt-4">
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 gap-2">
-      <h5 class="mb-0">📡 Registros guardados</h5>
-      <div class="d-flex align-items-center gap-2 toolbar">
-        <input id="searchInput" type="text" class="form-control form-control-sm" placeholder="Buscar: PLACA / VEH / OPERADOR" style="min-width: 260px;">
-        <button class="btn btn-outline-secondary btn-sm" id="btnClear">Limpiar</button>
-        <button class="btn btn-outline-secondary btn-sm" id="btnRefresh">Actualizar</button>
-
-        <div class="btn-group">
-          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">Exportar CSV</button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="#" id="exportCsvPage">Página actual</a></li>
-            <li><a class="dropdown-item" href="#" id="exportCsvAll">Todo filtrado</a></li>
-          </ul>
+      <div id="loader" class="loader">
+        <div class="loadcard">
+          <div class="spinner"></div>
+          <div class="loadtext">Cargando la aplicación…</div>
         </div>
-        <div class="btn-group">
-          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">Exportar Excel</button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="#" id="exportXlsxPage">Página actual</a></li>
-            <li><a class="dropdown-item" href="#" id="exportXlsxAll">Todo filtrado</a></li>
-          </ul>
+        <div class="help">
+          Si tarda demasiado, <a id="openLink2" href="#" target="_blank" rel="noopener">ábrela en una pestaña nueva</a>.
         </div>
       </div>
     </div>
+  </main>
 
-    <!-- Tabs de rango -->
-    <ul class="nav nav-pills gap-2 mb-3" id="tabsRango">
-      <li class="nav-item"><button class="nav-link active" data-range="hoy">Hoy</button></li>
-      <li class="nav-item"><button class="nav-link" data-range="semana">Semana</button></li>
-      <li class="nav-item"><button class="nav-link" data-range="mes">Mes</button></li>
-      <li class="nav-item"><button class="nav-link" data-range="historico">Histórico</button></li>
-    </ul>
+  <script>
+    (function () {
+      const APP_URL = "https://script.google.com/macros/s/AKfycbx3oSXd0e0hjMo41MTXNF6zunjJX_z7_vfbw3eQqrDVev8xlgjgFqtVWCx8WzHRtccqGw/exec";
+      const iframe = document.getElementById('appFrame');
+      const loader = document.getElementById('loader');
+      const btnReload = document.getElementById('btnReload');
+      const btnOpen = document.getElementById('btnOpen');
+      const openLink2 = document.getElementById('openLink2');
 
-    <div class="table-responsive">
-      <table class="table table-sm table-striped" id="tablaRemota">
-        <thead id="theadRemoto"></thead>
-        <tbody id="tbodyRemoto"></tbody>
-      </table>
-    </div>
+      btnOpen.href = APP_URL;
+      openLink2.href = APP_URL;
 
-    <!-- Paginación (solo histórico) -->
-    <div class="d-flex align-items-center justify-content-between mt-2" id="pager" style="display:none;">
-      <div class="small text-muted" id="pagerInfo"></div>
-      <div class="btn-group">
-        <button class="btn btn-outline-secondary btn-sm" id="prevPage">« Anterior</button>
-        <button class="btn btn-outline-secondary btn-sm" id="nextPage">Siguiente »</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Toast container -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
-  <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="d-flex">
-      <div class="toast-body" id="toastMsg">✅ Registro guardado correctamente</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-  </div>
-</div>
-
-<!-- Bootstrap JS primero para usar Toasts dentro de nuestro script -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-  /* ===================== CONFIG ===================== */
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOiae29CImB1TTXq2ph6SEm-QeVkKGNqc8-w1eGH7LHxuQwC99tCuz_hMjUg_3B-fT/exec";
-
-  // Operadores (JSON)
-  const OPERADORES_URL = `${WEB_APP_URL}?format=json&id=11nE7L7Ek9cQpw6YhQe-TBvnrTdTNUnJjz_czB6W8meg`;
-
-  // Histórico (CSV) – pestaña "resumen 700"
-  const HISTORICO_URL  = `${WEB_APP_URL}?format=csv&id=1QdJ1sQeXRBNyKM6YthPfAeFeGfs4Kyj69tMNg-Mmd34&sheet=resumen%20700`;
-
-  // POST directo a la misma hoja/pestaña
-  const GAS_EXEC_URL   = WEB_APP_URL;
-  const HIST_SHEET_ID  = "1QdJ1sQeXRBNyKM6YthPfAeFeGfs4Kyj69tMNg-Mmd34";
-  const HIST_SHEET_TAB = "resumen 700";
-
-  const AUTO_REFRESH_MS = 15000;
-  const PAGE_SIZE_HIST  = 100;
-
-  // Vehículo -> Placa
-  const vehPlacaMap = {
-    "703":"EQS895","705":"KTN494","707":"KTN914","708":"KTN209","709":"WMR093",
-    "714":"WDX622","715":"KTN495","717":"EQR790","719":"TRN968","721":"EQS922",
-    "723":"FVY522","725":"EQS921","728":"KTN496","729":"NNL187","730":"FWL901",
-    "731":"EQS897","733":"WMR005","735":"KTN493","742":"FVY442","744":"WDY573",
-    "746":"KTN491","747":"WMQ966","748":"FWK018","749":"FWM088","752":"WMR096",
-    "757":"KTN059","758":"KTO211","759":"SWX672","761":"TZS770","763":"WMP862",
-    "764":"KTN583","765":"TSR679","766":"KTN640","767":"KTN960","768":"GDX320","769":"GDX322"
-  };
-  const VEH_LIST = Object.keys(vehPlacaMap).sort((a,b)=>parseInt(a)-parseInt(b));
-
-  /* ===================== Helpers / Estado ===================== */
-  const pad=n=>String(n).padStart(2,'0');
-  const normKey=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]/g,"").toLowerCase();
-  function formatDMY(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${pad(d)}/${pad(m)}/${y}`; }
-  function nowDMYHMS(){ const t=new Date(); return `${pad(t.getDate())}/${pad(t.getMonth()+1)}/${t.getFullYear()} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`; }
-
-  let remoto=[], headersRemotos=[], activeRange="hoy", searchQuery="", sortKey=null, sortDir=1, currentPage=1, autoRefreshTimer=null;
-
-  /* ===================== Toasts ===================== */
-  function showToast(msg, success=true) {
-    const toastEl = document.getElementById("liveToast");
-    const toastMsg = document.getElementById("toastMsg");
-    toastMsg.textContent = msg;
-    toastEl.classList.remove("bg-success","bg-danger");
-    toastEl.classList.add(success ? "bg-success" : "bg-danger");
-    new bootstrap.Toast(toastEl, { delay: 2500 }).show();
-  }
-
-  /* ===================== Modo oscuro ===================== */
-  (function(){
-    const t=document.getElementById("darkToggle");
-    const apply=()=>{const d=localStorage.getItem("darkMode")==="1"; document.body.classList.toggle("dark",d); t.checked=d;};
-    t.addEventListener("change",()=>{localStorage.setItem("darkMode",t.checked?"1":"0"); apply();});
-    apply();
-  })();
-
-  /* ===================== Cargar OPERADORES (JSON) ===================== */
-  async function cargarOperadores() {
-    const sel = document.getElementById("operadorSelect");
-    try {
-      const r = await fetch(OPERADORES_URL, { mode:"cors", cache:"no-store" });
-      const data = await r.json();
-      const headers = Object.keys(data[0]||{});
-      const keyNombre = headers.find(h=>h.toLowerCase().includes("nombre"));
-      if (!keyNombre) { sel.innerHTML = '<option value="">NO SE ENCONTRÓ COLUMNA NOMBRE</option>'; return; }
-      const nombres = [...new Set(data.map(row => (row[keyNombre]||"").toString().trim().toUpperCase()))]
-        .filter(Boolean).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
-      sel.innerHTML = '<option value="">SELECCIONE...</option>' + nombres.map(n=>`<option value="${n}">${n}</option>`).join("");
-    } catch(e) {
-      console.error("Operadores:", e); sel.innerHTML = '<option value="">ERROR CARGANDO OPERADORES</option>';
-    }
-  }
-
-  /* ===================== Cargar HISTÓRICO (CSV) ===================== */
-  async function cargarRemoto(){
-    try{
-      const txt = await (await fetch(HISTORICO_URL, {mode:"cors", cache:"no-store"})).text();
-      const parsed = Papa.parse(txt,{header:true,skipEmptyLines:true});
-      headersRemotos = parsed.meta.fields || Object.keys(parsed.data[0]||{});
-      remoto = parsed.data.map(r=>{const o={}; headersRemotos.forEach(h=>o[h]=r[h]??""); return o;});
-    }catch(e){ console.error("Histórico:",e); headersRemotos=[]; remoto=[]; }
-  }
-
-  /* ===================== Tabla/UI ===================== */
-  function fechaToDate(v){ const f=(v||"").toString().trim(); const [d,m,y]=f.split("/"); if(!d||!m||!y) return null; return new Date(`${y}-${m}-${d}T00:00:00`); }
-  function colFecha(){ return headersRemotos.find(h=>normKey(h)==="fecha"); }
-  function colVeh(){ return headersRemotos.find(h=>normKey(h)==="veh"); }
-  function colPlaca(){ return headersRemotos.find(h=>normKey(h)==="placa"); }
-  function colOperador(){ return headersRemotos.find(h=>normKey(h)==="operador"); }
-
-  function filtrarPorRango(){
-    const hoy=new Date(); hoy.setHours(0,0,0,0);
-    let desde=new Date(hoy);
-    if(activeRange==="semana") desde.setDate(hoy.getDate()-7);
-    if(activeRange==="mes")    desde.setDate(hoy.getDate()-30);
-    const hF=colFecha(); if(!hF) return remoto.slice();
-    if(activeRange==="historico") return remoto.slice();
-    return remoto.filter(r=>{ const d=fechaToDate(r[hF]); if(!d) return false; if(activeRange==="hoy") return d.getTime()===hoy.getTime(); return d>=desde; });
-  }
-
-  function filtrarPorBusqueda(rows){
-    const q=searchQuery.trim().toUpperCase(); if(!q) return rows;
-    const hPl=colPlaca(), hV=colVeh(), hO=colOperador();
-    return rows.filter(r=>{
-      if(hPl && (r[hPl]||"").toString().toUpperCase().includes(q)) return true;
-      if(hV  && (r[hV] ||"").toString().toUpperCase().includes(q)) return true;
-      if(hO  && (r[hO] ||"").toString().toUpperCase().includes(q)) return true;
-      return Object.values(r).some(v=>(v||"").toString().toUpperCase().includes(q));
-    });
-  }
-
-  function ordenarRows(rows){
-    if(!sortKey) return rows;
-    const dir=sortDir;
-    return rows.slice().sort((a,b)=>{
-      const av=(a[sortKey]??"").toString(), bv=(b[sortKey]??"").toString();
-      const an=parseFloat(av.replace(",",".")), bn=parseFloat(bv.replace(",",".")); const num=!isNaN(an)&&!isNaN(bn);
-      return (num?(an-bn):av.localeCompare(bv,'es',{numeric:true,sensitivity:'base'}))*dir;
-    });
-  }
-
-  function paginateRows(rows){
-    if(activeRange!=="historico"){ document.getElementById("pager").style.display="none"; return rows; }
-    const total=rows.length, pages=Math.max(1,Math.ceil(total/PAGE_SIZE_HIST));
-    if(currentPage>pages) currentPage=pages;
-    const s=(currentPage-1)*PAGE_SIZE_HIST, e=s+PAGE_SIZE_HIST;
-    document.getElementById("pager").style.display="flex";
-    document.getElementById("pagerInfo").textContent=`Página ${currentPage} de ${pages} · ${total} filas`;
-    document.getElementById("prevPage").disabled=currentPage===1;
-    document.getElementById("nextPage").disabled=currentPage===pages;
-    return rows.slice(s,e);
-  }
-
-  function renderRemoto(){
-    const thead=document.getElementById("theadRemoto"), tbody=document.getElementById("tbodyRemoto");
-    thead.innerHTML=""; tbody.innerHTML="";
-    if(!headersRemotos.length){ thead.innerHTML="<tr><th>Sin datos</th></tr>"; return; }
-
-    const trh=document.createElement("tr");
-    headersRemotos.forEach(h=>{
-      const th=document.createElement("th"); th.textContent=h;
-      const span=document.createElement("span"); span.className="sort"; if(sortKey===h) span.textContent=sortDir===1?"▲":"▼";
-      th.appendChild(span);
-      th.addEventListener("click",()=>{ if(sortKey===h) sortDir=-sortDir; else { sortKey=h; sortDir=1; } currentPage=1; renderRemoto(); });
-      trh.appendChild(th);
-    });
-    thead.appendChild(trh);
-
-    const rows=paginateRows( ordenarRows( filtrarPorBusqueda( filtrarPorRango() ) ) );
-    const frag=document.createDocumentFragment();
-    rows.forEach(r=>{
-      const tr=document.createElement("tr");
-      headersRemotos.forEach(h=>{ const td=document.createElement("td"); td.textContent=r[h]??""; tr.appendChild(td); });
-      frag.appendChild(tr);
-    });
-    tbody.appendChild(frag);
-  }
-
-  function actualizarStatsFechaActual(){
-    const hF=colFecha(); const total=VEH_LIST.length; let hechos=0;
-    if(hF){ const f=formatDMY(document.getElementById("fechaInput").value); hechos=remoto.filter(r=>(r[hF]||"").trim()===f).length; }
-    document.getElementById("statHechos").textContent=hechos;
-    document.getElementById("statTotalVeh").textContent=total;
-    document.getElementById("statFaltan").textContent=Math.max(0,total-hechos);
-  }
-
-  function existeRegistro(fechaDDMMYYYY, veh){ const hF=colFecha(), hV=colVeh(); if(!hF||!hV) return false; return remoto.some(r=> (r[hF]||"")===fechaDDMMYYYY && (r[hV]||"")===veh ); }
-  function checkDuplicadoUI(){ const f=formatDMY(document.getElementById("fechaInput").value); const v=document.getElementById("vehSelect").value; const ya=existeRegistro(f,v); document.getElementById("dupInfo").classList.toggle("d-none", !(f&&v&&ya)); return ya; }
-
-  function optimisticInsert(rowObj){
-    if (!headersRemotos.length) return;
-    const row={}; headersRemotos.forEach(h=> row[h]= rowObj[h] ?? "" );
-    remoto.unshift(row);
-    renderRemoto();
-    actualizarStatsFechaActual();
-    checkDuplicadoUI();
-  }
-
-  /* ===================== Auto refresh / UI eventos ===================== */
-  function startAutoRefresh(){ stopAutoRefresh(); autoRefreshTimer=setInterval(async()=>{ if(document.hidden) return; await cargarRemoto(); renderRemoto(); actualizarStatsFechaActual(); }, AUTO_REFRESH_MS); }
-  function stopAutoRefresh(){ if(autoRefreshTimer) clearInterval(autoRefreshTimer); autoRefreshTimer=null; }
-  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) startAutoRefresh(); });
-
-  document.getElementById("searchInput").addEventListener("input", e=>{ searchQuery=e.target.value; currentPage=1; renderRemoto(); });
-  document.getElementById("btnClear").addEventListener("click", ()=>{ document.getElementById("searchInput").value=""; searchQuery=""; currentPage=1; renderRemoto(); });
-  document.getElementById("btnRefresh").addEventListener("click", async ()=>{ await cargarRemoto(); renderRemoto(); actualizarStatsFechaActual(); });
-
-  document.getElementById("prevPage").addEventListener("click", ()=>{ if(currentPage>1){ currentPage--; renderRemoto(); } });
-  document.getElementById("nextPage").addEventListener("click", ()=>{ currentPage++; renderRemoto(); });
-
-  document.querySelectorAll("#tabsRango .nav-link").forEach(b=> b.addEventListener("click", e=>{
-    document.querySelectorAll("#tabsRango .nav-link").forEach(x=>x.classList.remove("active"));
-    e.target.classList.add("active");
-    activeRange=e.target.dataset.range;
-    currentPage=1;
-    renderRemoto();
-  }));
-
-  /* ===================== Exportar ===================== */
-  function rowsFiltradosCompleto(){ return ordenarRows( filtrarPorBusqueda( filtrarPorRango() ) ); }
-  function rowsPaginaActual(){
-    if(activeRange!=="historico") return rowsFiltradosCompleto();
-    const full=rowsFiltradosCompleto(); const s=(currentPage-1)*PAGE_SIZE_HIST; return full.slice(s, s+PAGE_SIZE_HIST);
-  }
-  function exportToCSV(rows, filename){
-    const csv=Papa.unparse(rows,{columns:headersRemotos});
-    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  }
-  function exportToXLSX(rows, filename){
-    const ws=XLSX.utils.json_to_sheet(rows,{header:headersRemotos}); const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Datos"); XLSX.writeFile(wb, filename);
-  }
-  document.getElementById("exportCsvPage").addEventListener("click", e=>{ e.preventDefault(); exportToCSV(rowsPaginaActual(), "vista_pagina.csv"); });
-  document.getElementById("exportCsvAll").addEventListener("click", e=>{ e.preventDefault(); exportToCSV(rowsFiltradosCompleto(), "vista_filtrada.csv"); });
-  document.getElementById("exportXlsxPage").addEventListener("click", e=>{ e.preventDefault(); exportToXLSX(rowsPaginaActual(), "vista_pagina.xlsx"); });
-  document.getElementById("exportXlsxAll").addEventListener("click", e=>{ e.preventDefault(); exportToXLSX(rowsFiltradosCompleto(), "vista_filtrada.xlsx"); });
-
-  /* ===================== FECHA/VH ===================== */
-  function setToday(){ const el=document.getElementById("fechaInput"); const t=new Date(); el.value=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`; }
-  document.getElementById("vehSelect").addEventListener("change", function(){ document.getElementById("placaInput").value=vehPlacaMap[this.value]||""; checkDuplicadoUI(); });
-  document.getElementById("fechaInput").addEventListener("change", ()=>{ actualizarStatsFechaActual(); checkDuplicadoUI(); });
-
-  /* ===================== Envío directo a GAS (POST) ===================== */
-  document.getElementById("planillaForm").addEventListener("submit", async (e)=>{
-    e.preventDefault();
-    const form=e.currentTarget;
-    if(!form.reportValidity()) return;
-
-    const valI=parseInt(document.getElementById("validadorI").value,10);
-    const valF=parseInt(document.getElementById("validadorF").value,10);
-    if (valF < valI) { showToast("❌ El VALIDADOR F. no puede ser menor que VALIDADOR I.", false); return; }
-    if (checkDuplicadoUI()) { showToast("⚠️ Ya existe un registro para ese VEH en la fecha seleccionada.", false); return; }
-
-    // datos form
-    let data = Object.fromEntries(new FormData(form).entries());
-    data.fecha = formatDMY(data.fecha);
-    data.FECHA_HORA_ACCION = nowDMYHMS();
-    for (let k in data){ if (typeof data[k]==="string" && k!=="fecha" && k!=="FECHA_HORA_ACCION"){ if(isNaN(data[k])) data[k]=data[k].toUpperCase(); } }
-
-    // payload para Apps Script (usar nombres EXACTOS de las columnas)
-    const payload = {
-      id: HIST_SHEET_ID,
-      sheet: HIST_SHEET_TAB,
-      row: {
-        "FECHA": data.fecha, "RUTA": data["RUTA"], "PLACA": data["PLACA"],
-        "SUB-RUTA": data["SUB-RUTA"], "VEH": data["VEH"],
-        "VALIDADOR I.": data["VALIDADOR I."], "VALIDADOR F.": data["VALIDADOR F."],
-        "VIAJES": data["VIAJES"], "OPERADOR": data["OPERADOR"],
-        "TURNO": data["TURNO"], "GESTOR": data["GESTOR"],
-        "FECHA_HORA_ACCION": data["FECHA_HORA_ACCION"]
-      }
-    };
-
-    try{
-      const r = await fetch(GAS_EXEC_URL, {
-        method:"POST",
-        mode:"cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" }, // evita preflight
-        body: JSON.stringify(payload)
+      // Oculta loader cuando el iframe dispara 'load'
+      iframe.addEventListener('load', () => {
+        loader.classList.add('hidden');
       });
-      const res = await r.json();
-      if (!res.ok) throw new Error(res.error || "Fallo al insertar");
 
-      // pinta al instante
-      optimisticInsert(payload.row);
+      // Botón recargar
+      btnReload.addEventListener('click', () => {
+        loader.classList.remove('hidden');
+        // Forzar recarga del iframe sin tocar el scroll de la página contenedora
+        iframe.src = APP_URL + (APP_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+      });
 
-      showToast("✅ Registro guardado correctamente", true);
-      form.reset();
-      document.getElementById("placaInput").value="";
-      setToday();
-      actualizarStatsFechaActual();
-      checkDuplicadoUI();
+      // Timeout de seguridad: si no carga en X seg, muestra link de apertura
+      setTimeout(() => {
+        // Si por CSP / red tarda demasiado, dejamos visible el loader con el link de ayuda
+        // (no hacemos nada más, solo aseguramos que el link está)
+        openLink2.href = APP_URL;
+      }, 6000);
 
-      // Si prefieres refrescar del servidor enseguida, descomenta:
-      // await cargarRemoto(); renderRemoto(); actualizarStatsFechaActual();
-    }catch(err){
-      console.error(err);
-      showToast("❌ Error guardando: "+err.message, false);
-    }
-  });
-
-  /* ===================== Operadores / Init ===================== */
-  (async function init(){
-    // VH select
-    const selVH=document.getElementById("vehSelect");
-    selVH.innerHTML = '<option value="">Seleccione...</option>' + VEH_LIST.map(v=>`<option value="${v}">${v}</option>`).join("");
-    document.getElementById("statTotalVeh").textContent = VEH_LIST.length;
-
-    // fecha hoy
-    setToday();
-
-    // listeners tabs ya están; cargar datos
-    await cargarOperadores();
-    await cargarRemoto();
-    actualizarStatsFechaActual();
-    renderRemoto();
-    startAutoRefresh();
-  })();
-</script>
+      // Ajuste fino para cambios de orientación (algunos navegadores recalculan las unidades *vh*)
+      const fit = () => {
+        // No necesitamos medir contenido interno (cross-origin),
+        // el layout flex + 100% alto ya cubre toda la pantalla de forma segura.
+        // Este hook queda por si quisieras agregar lógica adicional en el futuro.
+      };
+      window.addEventListener('orientationchange', fit);
+      window.addEventListener('resize', fit);
+      fit();
+    })();
+  </script>
 </body>
 </html>
+
+
